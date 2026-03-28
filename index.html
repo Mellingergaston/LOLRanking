@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>League of Legends - Ranking Elo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header__container">
+            <div class="header__logo">
+                <span class="logo-icon">⚔</span>
+                <h1 class="logo-text">Elo Ranking</h1>
+            </div>
+            <p class="header__subtitle">League of Legends - Ranking de Amigos</p>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <div class="container">
+            <!-- TITLE SECTION -->
+            <section class="ranking-section">
+                <h2 class="ranking-title">Tabla de Clasificación</h2>
+                <p class="ranking-subtitle">Ordenado por Elo (Mayor a Menor)</p>
+            </section>
+
+            <!-- LEADERBOARD CONTAINER -->
+            <section class="leaderboard">
+                <!-- HEADER ROW (Desktop) -->
+                <div class="leaderboard__header">
+                    <div class="leaderboard__col leaderboard__col--rank">Pos</div>
+                    <div class="leaderboard__col leaderboard__col--player">Jugador</div>
+                    <div class="leaderboard__col leaderboard__col--rank-info">Rango</div>
+                    <div class="leaderboard__col leaderboard__col--lp">LP</div>
+                    <div class="leaderboard__col leaderboard__col--winrate">Winrate</div>
+                </div>
+
+                <!-- PLAYERS CONTAINER (aquí se inyectará dinámicamente) -->
+                <div id="playersContainer" class="leaderboard__body">
+                    <!-- Loading state -->
+                    <div class="loading">
+                        <p>Cargando datos...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ERROR MESSAGE -->
+            <div id="errorContainer" class="error-message" style="display: none;"></div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer__content">
+            <p>&copy; 2026 League of Legends Ranking. Datos simulados para desarrolladores.</p>
+            <p class="footer__note">Endpoint: <code>http://localhost:8080/api/ranking</code></p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
