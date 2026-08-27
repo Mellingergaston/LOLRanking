@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Summoner {
+  puuid     String   @id
+  riotId    String   @unique
+  gameName  String
+  tagLine   String
+  updatedAt DateTime @updatedAt
+}
+
+model MatchParticipation {
+  matchId              String
+  puuid                String
+  gameCreation         DateTime
+  queueId              Int
+  win                  Boolean
+  kills                Int
+  deaths               Int
+  assists              Int
+  damageDealt          Int
+  damageTaken          Int
+  visionScore          Int
+  // Agregados después del primer release — opcionales para no romper filas viejas.
+  championId           Int?
+  championName         String?
+  teamId               Int?
+  teamPosition         String?
+  minionsKilled        Int?
+  neutralMinionsKilled Int?
+  gameDurationSeconds  Int?
+  createdAt            DateTime @default(now())
+
+  @@id([matchId, puuid])
+  @@index([puuid, gameCreation])
+}
