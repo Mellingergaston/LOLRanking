@@ -6,10 +6,6 @@ import { sortByStanding } from '@/domain/services/rankOrdering';
 import type { PuuidResolver } from './PuuidResolver';
 import type { ProfileIconResolver } from './ProfileIconResolver';
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /**
  * Trae el rango vigente de todo el grupo. Siempre en vivo contra Riot
  * (League-V4 es una sola llamada liviana por jugador, y el rango cambia
@@ -21,18 +17,11 @@ export class GetGroupRankingUseCase {
     private readonly puuidResolver: PuuidResolver,
     private readonly standingProvider: RankedStandingProvider,
     private readonly profileIconResolver: ProfileIconResolver,
-    private readonly delayBetweenPlayersMs = 150
   ) {}
 
-  async execute(): Promise<RankedStanding[]> {
+  async execute() {
     const players = this.playerRepository.getTrackedPlayers();
-    const results: RankedStanding[] = [];
-
-    for (const player of players) {
-      results.push(await this.getStandingFor(player));
-      await sleep(this.delayBetweenPlayersMs);
-    }
-
+    const results = await Promise.all(players.map((player) => this.getStandingFor(player)));
     return sortByStanding(results);
   }
 
