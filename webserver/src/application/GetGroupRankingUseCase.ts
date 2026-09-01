@@ -23,14 +23,9 @@ export class GetGroupRankingUseCase {
     private readonly profileIconResolver: ProfileIconResolver,
   ) {}
 
-  async execute(): Promise<RankedStanding[]> {
+  async execute() {
     const players = this.playerRepository.getTrackedPlayers();
-    const results: RankedStanding[] = [];
-
-    for (const player of players) {
-      results.push(await this.getStandingFor(player));
-    }
-
+    const results = await Promise.all(players.map((player) => this.getStandingFor(player)));
     return sortByStanding(results);
   }
 
