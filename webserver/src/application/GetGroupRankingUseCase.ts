@@ -6,10 +6,6 @@ import { sortByStanding } from '@/domain/services/rankOrdering';
 import type { PuuidResolver } from './PuuidResolver';
 import type { ProfileIconResolver } from './ProfileIconResolver';
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /**
  * Trae el rango vigente de todo el grupo. Siempre en vivo contra Riot
  * (League-V4 es una sola llamada liviana por jugador, y el rango cambia
