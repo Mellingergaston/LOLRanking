@@ -21,7 +21,6 @@ export class GetGroupRankingUseCase {
     private readonly puuidResolver: PuuidResolver,
     private readonly standingProvider: RankedStandingProvider,
     private readonly profileIconResolver: ProfileIconResolver,
-    private readonly delayBetweenPlayersMs = 150
   ) {}
 
   async execute(): Promise<RankedStanding[]> {
@@ -30,7 +29,6 @@ export class GetGroupRankingUseCase {
 
     for (const player of players) {
       results.push(await this.getStandingFor(player));
-      await sleep(this.delayBetweenPlayersMs);
     }
 
     return sortByStanding(results);
