@@ -1,7 +1,7 @@
 import { getRankingPageDataUseCase } from '@/infrastructure/container';
 import { RankingClient } from '@/ui/RankingClient';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export default async function Home() {
   const initialData = await getRankingPageDataUseCase.execute();
