@@ -36,7 +36,23 @@ model MatchParticipation {
   neutralMinionsKilled Int?
   gameDurationSeconds  Int?
   createdAt            DateTime @default(now())
+  encountersSynced     Boolean  @default(false)
 
   @@id([matchId, puuid])
+  @@index([puuid, gameCreation])
+}
+
+model PlayerEncounter {
+  matchId       String
+  puuid         String
+  otherPuuid    String
+  gameName      String
+  tagLine       String
+  championName  String
+  gameCreation  DateTime
+  isAlly        Boolean
+  win           Boolean
+
+  @@id([matchId, puuid, otherPuuid])
   @@index([puuid, gameCreation])
 }

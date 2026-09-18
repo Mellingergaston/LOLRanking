@@ -3,6 +3,7 @@ export interface MatchListFilter {
   since: Date;
   /** Máximo de IDs a pedir. */
   count: number;
+  start?: number;
 }
 
 /** Datos de un jugador puntual dentro de una partida (Match-V5). */
@@ -26,6 +27,7 @@ export interface MatchParticipationData {
   minionsKilled: number;
   neutralMinionsKilled: number;
   gameDurationSeconds: number;
+  encounters?: import('../services/computeEncounters').EncounterRecord[];
 }
 
 /** Acceso al historial de partidas (Match-V5). */

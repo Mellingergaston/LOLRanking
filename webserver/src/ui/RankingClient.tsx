@@ -33,6 +33,7 @@ export function RankingClient({ initialData }: RankingClientProps) {
 
     try {
       const res = await fetch('/api/ranking');
+      if (!res.ok) throw new Error('No se pudo actualizar el ranking');
       const json: RankingPageData = await res.json();
       setData(json);
     } catch {
@@ -49,11 +50,13 @@ export function RankingClient({ initialData }: RankingClientProps) {
     try {
       const res = await fetch('/api/sync', { method: 'POST' });
       const summary = await res.json();
+      if (!res.ok) throw new Error(summary.error || 'No se pudo sincronizar');
       const totalSynced = (summary.players ?? []).reduce(
         (sum: number, p: { matchesSynced: number }) => sum + p.matchesSynced,
         0
       );
-      setSyncMessage(`Listo: ${totalSynced} partidas nuevas.`);
+      const failed = (summary.players ?? []).filter((p: { error: string | null }) => p.error).length;
+      setSyncMessage(`${totalSynced} partidas actualizadas.${failed ? ` ${failed} jugadores no pudieron completarse; volvé a intentarlo.` : ' Encuentros actualizados.'}`);
       await loadRanking(true);
     } catch {
       setSyncMessage('No se pudo sincronizar. Probá de nuevo.');
@@ -95,19 +98,17 @@ export function RankingClient({ initialData }: RankingClientProps) {
               onSearchChange={setSearchQuery}
             />
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 2rem', marginTop: '1rem' }}>
+            <div className="ranking-toolbar" id="ranking">
+              <div><span className="eyebrow">EL GRUPO, EN NÚMEROS</span><h2>Tabla de posiciones <span className="count-badge">{data.players.length}</span></h2></div>
               <button type="button" className="btn-secondary" disabled={syncing} onClick={handleSync}>
-                {syncing ? 'SINCRONIZANDO…' : 'SINCRONIZAR PARTIDAS'}
+                {syncing ? 'Sincronizando…' : '↻ Sincronizar partidas'}
               </button>
               {syncMessage && (
-                <span style={{ marginLeft: 12, alignSelf: 'center', fontSize: '.8rem', color: 'var(--color-text-tertiary)' }}>
+                <span className="sync-message" role="status">
                   {syncMessage}
                 </span>
               )}
             </div>
-
-            <GroupRecords stats={data.players.map((p) => p.stats).filter((s): s is NonNullable<typeof s> => !!s)} />
-            <LaneLeaders leaders={data.laneLeaderboard} />
 
             {filteredSorted.length === 0 ? (
               <div className="state-panel" style={{ paddingTop: 48 }}>
@@ -128,16 +129,23 @@ export function RankingClient({ initialData }: RankingClientProps) {
                     <PodiumCard key={player.riotId} player={player} position={(i + 1) as 1 | 2 | 3} />
                   ))}
                 </div>
-                {filteredSorted.length > 3 && <PlayerTable players={filteredSorted.slice(3)} startPosition={4} />}
+                <PlayerTable players={filteredSorted} startPosition={1} />
               </>
             )}
+            <section className="group-insights" id="estadisticas">
+              <div className="section-heading"><div><span className="eyebrow">ÚLTIMOS 30 DÍAS</span><h2>Más allá del elo</h2><p>Los protagonistas del grupo, en cada aspecto del juego.</p></div><span className="count-badge">Estadísticas del grupo</span></div>
+              <GroupRecords stats={data.players.map((p) => p.stats).filter((s): s is NonNullable<typeof s> => !!s)} />
+              <LaneLeaders leaders={data.laneLeaderboard} />
+              {!data.players.some((p) => p.stats?.gamesPlayed) && <p className="data-note">Sincronizá las partidas para descubrir los récords y líderes del grupo.</p>}
+            </section>
+            <div className="encounters-banner"><div className="encounters-banner__icon" aria-hidden="true">◎</div><div><span className="eyebrow">NUEVO · ENCUENTROS</span><h2>¿Otra vez vos?</h2><p>Entrá al perfil de un jugador y descubrí sus aliados habituales y rivales recurrentes.</p></div><span className="encounters-banner__arrow" aria-hidden="true">↗</span></div>
           </>
         )}
       </main>
 
       <footer className="footer">
-        <div>Datos de la Riot Games API · cache local de partidas (SQLite)</div>
-        <div>Escala de tiers: Hierro → Retador</div>
+        <div><strong>lolranking</strong> · La competencia queda entre amigos.</div>
+        <div>Datos de Riot Games · No afiliado a Riot Games.</div>
       </footer>
     </>
   );

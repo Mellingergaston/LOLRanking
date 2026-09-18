@@ -14,18 +14,20 @@ export function Hero({ totalPlayers, sortKey, searchQuery, onSortChange, onSearc
   return (
     <section className="hero">
       <div>
-        <div className="hero__season">TEMPORADA 2026 · SPLIT 2</div>
-        <div className="hero__title">Clasificación del grupo</div>
+        <div className="hero__season"><span className="live-dot" /> LEAGUE OF LEGENDS · SOLO / DÚO</div>
+        <h1 className="hero__title">La misma grieta.<br /><span>Tu propia competencia.</span></h1>
         <div className="hero__subtitle">
-          {totalPlayers} jugadores seguidos · ordenados por {SORT_LABELS[sortKey]}
+          Cada partida cuenta. Seguí a tus amigos, compará el progreso<br className="desktop-break" /> y descubrí con quién te volvés a cruzar.
         </div>
       </div>
       <div className="hero__controls">
+        <div className="hero__group"><strong>{totalPlayers.toString().padStart(2, '0')}</strong><span>JUGADORES<br />UN SOLO GRUPO</span></div>
         <div className="search">
           <div className="search__icon" />
           <input
             className="search__input"
             type="text"
+            aria-label="Buscar jugador en el ranking"
             placeholder="Buscar Riot ID…"
             autoComplete="off"
             value={searchQuery}

@@ -1,4 +1,5 @@
 import { formatRelativeTime } from './format';
+import Link from 'next/link';
 
 interface HeaderProps {
   playerCount: number;
@@ -11,13 +12,14 @@ interface HeaderProps {
 export function Header({ playerCount, lastUpdated, refreshing, hasError, onRefresh }: HeaderProps) {
   return (
     <header className="header">
-      <div className="header__brand">
-        <div className="header__mark" />
+      <Link href="/" className="header__brand" aria-label="LOLRanking, inicio">
+        <div className="header__mark">L<span>R</span></div>
         <div className="header__titles">
-          <div className="header__title">ELO RANKING</div>
-          <div className="header__tagline">LOLRANKING · AMIGOS</div>
+          <div className="header__title">lol<span>ranking</span></div>
+          <div className="header__tagline">TU GRUPO. TU COMPETENCIA.</div>
         </div>
-      </div>
+      </Link>
+      <nav className="header__nav" aria-label="Navegación principal"><Link href="/#ranking">Ranking</Link><Link href="/#estadisticas">Estadísticas</Link><span className="header__community">{playerCount} jugadores</span></nav>
 
       {hasError ? (
         <div className="header__badge header__badge--error">

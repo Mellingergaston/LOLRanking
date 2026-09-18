@@ -7,6 +7,8 @@ import type { RiotApiClient } from './RiotApiClient';
 
 interface MatchParticipantDto {
   puuid: string;
+  riotIdGameName?: string;
+  riotIdTagline?: string;
   kills: number;
   deaths: number;
   assists: number;
@@ -41,7 +43,7 @@ export class RiotMatchProviderImpl implements MatchProvider {
     const startTime = Math.floor(filter.since.getTime() / 1000);
     const url =
       `https://${this.continent}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids` +
-      `?startTime=${startTime}&count=${filter.count}`;
+      `?startTime=${startTime}&count=${filter.count}&start=${filter.start ?? 0}`;
     return this.client.get<string[]>(url);
   }
 
@@ -70,6 +72,15 @@ export class RiotMatchProviderImpl implements MatchProvider {
       minionsKilled: participant.totalMinionsKilled,
       neutralMinionsKilled: participant.neutralMinionsKilled,
       gameDurationSeconds: match.info.gameDuration,
+      encounters: match.info.participants
+        .filter((p) => p.puuid && p.puuid !== puuid)
+        .map((p) => ({
+          matchId, puuid, otherPuuid: p.puuid,
+          gameName: p.riotIdGameName ?? '', tagLine: p.riotIdTagline ?? '',
+          championName: p.championName,
+          gameCreation: new Date(match.info.gameCreation),
+          isAlly: p.teamId === participant.teamId, win: participant.win,
+        })),
     };
   }
 }

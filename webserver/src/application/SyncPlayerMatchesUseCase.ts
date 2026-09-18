@@ -20,12 +20,12 @@ function sleep(ms: number): Promise<void> {
 }
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-const MATCHES_PER_PLAYER = 30;
+const MATCHES_PER_PAGE = 100;
 const DELAY_BETWEEN_REQUESTS_MS = 150;
 
 /**
- * Trae las partidas nuevas de cada jugador del grupo (últimos 30 días, hasta
- * MATCHES_PER_PLAYER por jugador) y las guarda en la cache local. Se salta
+ * Trae las partidas nuevas de cada jugador del grupo (últimos 30 días,
+ * en páginas de 100) y completa encuentros de las partidas guardadas. Se salta
  * las partidas que ya están guardadas, así una segunda corrida es rápida.
  */
 export class SyncPlayerMatchesUseCase {
@@ -41,29 +41,49 @@ export class SyncPlayerMatchesUseCase {
     const results: PlayerSyncResult[] = [];
 
     for (const player of players) {
+      let seen = 0;
+      let synced = 0;
       try {
         const puuid = await this.puuidResolver.resolve(player);
-        const matchIds = await this.matchProvider.listMatchIds(puuid, { since, count: MATCHES_PER_PLAYER });
-
-        let synced = 0;
-        for (const matchId of matchIds) {
+        const matchIds = new Set<string>();
+        for (let start = 0; ; start += MATCHES_PER_PAGE) {
+          const page = await this.matchProvider.listMatchIds(puuid, { since, count: MATCHES_PER_PAGE, start });
+          page.forEach((id) => matchIds.add(id));
+          if (page.length < MATCHES_PER_PAGE) break;
           await sleep(DELAY_BETWEEN_REQUESTS_MS);
+        }
+        const pending = await this.matchStatsRepository.getMatchesMissingEncounters(puuid);
+        pending.forEach((id) => matchIds.add(id));
+        seen = matchIds.size;
+        let unavailable = 0;
+        for (const matchId of matchIds) {
           const alreadyStored = await this.matchStatsRepository.hasMatch(matchId, puuid);
           if (alreadyStored) continue;
-
-          const participation = await this.matchProvider.getParticipation(matchId, puuid);
-          if (!participation) continue;
+          await sleep(DELAY_BETWEEN_REQUESTS_MS);
+          let participation;
+          try {
+            participation = await this.matchProvider.getParticipation(matchId, puuid);
+          } catch (error) {
+            // An expired historical match must not block the rest of the backfill.
+            if (error instanceof Error && 'status' in error && error.status === 404) {
+              unavailable++;
+              continue;
+            }
+            throw error;
+          }
+          if (!participation) { unavailable++; continue; }
 
           await this.matchStatsRepository.saveParticipation(participation);
           synced += 1;
         }
 
-        results.push({ riotId: player.riotId, matchesSeen: matchIds.length, matchesSynced: synced, error: null });
+        results.push({ riotId: player.riotId, matchesSeen: seen, matchesSynced: synced,
+          error: unavailable ? `${unavailable} partidas no están disponibles en Riot.` : null });
       } catch (error) {
         results.push({
           riotId: player.riotId,
-          matchesSeen: 0,
-          matchesSynced: 0,
+          matchesSeen: seen,
+          matchesSynced: synced,
           error: error instanceof Error ? error.message : 'Error desconocido',
         });
       }

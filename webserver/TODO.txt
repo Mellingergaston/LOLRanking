@@ -1,0 +1,1 @@
+hacer un cron para actualizar automaticamente

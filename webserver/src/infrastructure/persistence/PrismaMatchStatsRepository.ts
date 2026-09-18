@@ -9,20 +9,43 @@ export class PrismaMatchStatsRepository implements MatchStatsRepository {
   async hasMatch(matchId: string, puuid: string): Promise<boolean> {
     const found = await this.db.matchParticipation.findUnique({
       where: { matchId_puuid: { matchId, puuid } },
-      select: { championId: true },
+      select: { championId: true, encountersSynced: true },
     });
     // Filas guardadas antes de sumar columnas nuevas (championId, teamPosition,
     // etc.) quedan con championId null — se tratan como "no sincronizadas" para
     // que la próxima sincronización las vuelva a traer completas.
-    return found !== null && found.championId !== null;
+    return found !== null && found.championId !== null && found.encountersSynced;
   }
 
   async saveParticipation(data: MatchParticipationData): Promise<void> {
-    await this.db.matchParticipation.upsert({
-      where: { matchId_puuid: { matchId: data.matchId, puuid: data.puuid } },
-      create: data,
-      update: data,
+    const { encounters, ...participation } = data;
+    await this.db.$transaction(async (tx) => {
+      await tx.matchParticipation.upsert({
+        where: { matchId_puuid: { matchId: data.matchId, puuid: data.puuid } },
+        create: { ...participation, encountersSynced: encounters !== undefined },
+        update: { ...participation, ...(encounters !== undefined ? { encountersSynced: true } : {}) },
+      });
+      if (encounters !== undefined) {
+        await tx.playerEncounter.deleteMany({ where: { matchId: data.matchId, puuid: data.puuid } });
+        for (const encounter of encounters) {
+          await tx.playerEncounter.upsert({
+            where: { matchId_puuid_otherPuuid: { matchId: data.matchId, puuid: data.puuid, otherPuuid: encounter.otherPuuid } },
+            create: encounter, update: encounter,
+          });
+        }
+      }
     });
+  }
+
+  async getMatchesMissingEncounters(puuid: string): Promise<string[]> {
+    const rows = await this.db.matchParticipation.findMany({
+      where: { puuid, encountersSynced: false }, select: { matchId: true },
+    });
+    return rows.map((row) => row.matchId);
+  }
+
+  async getEncounters(puuid: string) {
+    return this.db.playerEncounter.findMany({ where: { puuid }, orderBy: { gameCreation: 'desc' } });
   }
 
   async getStatsSince(puuid: string, riotId: string, since: Date): Promise<MonthlyStats> {

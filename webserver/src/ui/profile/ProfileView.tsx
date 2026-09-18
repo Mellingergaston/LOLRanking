@@ -4,12 +4,13 @@ import type { PlayerProfileData } from '@/application/GetPlayerProfileUseCase';
 import { avatarImgStyle } from '../format';
 import { tierColorStyle } from '../tierColor';
 import { LANE_LABELS } from '@/domain/services/computeLaneStats';
+import { EncountersSection } from './EncountersSection';
 
 export function ProfileView({ profile }: { profile: PlayerProfileData }) {
   const colorStyle = tierColorStyle(profile.tier);
 
   return (
-    <main className="main">
+    <main className="main profile-main" id="resumen">
       <Link href="/" className="profile-back">
         ‹ VOLVER AL RANKING
       </Link>
@@ -22,7 +23,7 @@ export function ProfileView({ profile }: { profile: PlayerProfileData }) {
         </div>
         <div className="profile-identity">
           <div className="profile-name-row">
-            <div className="profile-name">{profile.name}</div>
+            <h1 className="profile-name">{profile.name}</h1>
             <div className="profile-tag">#{profile.tag}</div>
           </div>
           <div className="profile-meta">
@@ -53,6 +54,9 @@ export function ProfileView({ profile }: { profile: PlayerProfileData }) {
         </div>
       ) : (
         <>
+          <nav className="profile-nav" aria-label="Secciones del perfil">
+            <a href="#resumen">Resumen</a><a href="#encuentros">Encuentros <span>{profile.encounters.length}</span></a><a href="#rendimiento">Rendimiento</a>
+          </nav>
           <div className="profile-tiles">
             <div className="profile-tile">
               <div className="profile-tile__label">WINRATE (RANGO)</div>
@@ -74,11 +78,11 @@ export function ProfileView({ profile }: { profile: PlayerProfileData }) {
             </div>
           </div>
 
-          <RecentFormSection profile={profile} />
-          <ChampionsSection profile={profile} />
-          <LaneStatsSection profile={profile} />
-          <DuoStatsSection profile={profile} />
-          <GameModesSection profile={profile} />
+          <EncountersSection encounters={profile.encounters} matches={profile.encounterMatches} pending={profile.pendingEncounterMatches} />
+          <div className="profile-grid" id="rendimiento">
+            <div><RecentFormSection profile={profile} /><DuoStatsSection profile={profile} /></div>
+            <div><ChampionsSection profile={profile} /><LaneStatsSection profile={profile} /><GameModesSection profile={profile} /></div>
+          </div>
         </>
       )}
     </main>
@@ -100,7 +104,13 @@ function RecentFormSection({ profile }: { profile: PlayerProfileData }) {
               key={match.matchId}
               className={`recent-form__game recent-form__game--${match.win ? 'win' : 'loss'}`}
               title={`${match.win ? 'Victoria' : 'Derrota'} · ${match.championName} · ${match.kills}/${match.deaths}/${match.assists} · ${match.gameCreation.toLocaleDateString('es-AR')}`}
-            />
+            >
+              {match.championIconUrl && <Image src={match.championIconUrl} alt={match.championName} width={36} height={36} />}
+              <strong>{match.win ? 'Victoria' : 'Derrota'}</strong>
+              <span>{match.championName}</span>
+              <b>{match.kills} / {match.deaths} / {match.assists}</b>
+              <time>{match.gameCreation.toLocaleDateString('es-AR', { timeZone: 'UTC' })}</time>
+            </div>
           ))}
         </div>
       )}

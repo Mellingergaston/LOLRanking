@@ -18,6 +18,7 @@ import type { PuuidResolver } from './PuuidResolver';
 import type { ProfileIconResolver } from './ProfileIconResolver';
 import { ChampionMasteryResolver, type ChampionMasteryView } from './ChampionMasteryResolver';
 import { buildOpggUrl } from './buildOpggUrl';
+import { computeEncounters, type EncounterSummary } from '@/domain/services/computeEncounters';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const MIN_GAMES_FOR_CHAMPION_OR_LANE = 3;
@@ -53,6 +54,9 @@ export interface PlayerProfileData {
   gameModeStats: GameModeStat[];
   recentForm: RecentMatchView[];
   duoStats: DuoStat[];
+  encounters: EncounterSummary[];
+  encounterMatches: number;
+  pendingEncounterMatches: number;
   opggUrl: string;
 }
 
@@ -83,11 +87,13 @@ export class GetPlayerProfileUseCase {
 
     const since = new Date(Date.now() - THIRTY_DAYS_MS);
 
-    const [standingResult, profileIconUrl, records, topMasteries] = await Promise.all([
+    const [standingResult, profileIconUrl, records, topMasteries, encounterRecords, pendingMatches] = await Promise.all([
       this.standingProvider.getSoloQueueStanding(puuid).catch(() => null),
       this.profileIconResolver.resolve(puuid),
       this.matchStatsRepository.getRecentMatches(puuid, since),
       this.championMasteryResolver.resolveTop(puuid, 3),
+      this.matchStatsRepository.getEncounters(puuid),
+      this.matchStatsRepository.getMatchesMissingEncounters(puuid),
     ]);
 
     const others = await this.getOtherPlayersRecords(riotId, since);
@@ -133,6 +139,9 @@ export class GetPlayerProfileUseCase {
       gameModeStats: computeGameModeBreakdown(records),
       recentForm,
       duoStats,
+      encounters: computeEncounters(encounterRecords),
+      encounterMatches: new Set(encounterRecords.map((r) => r.matchId)).size,
+      pendingEncounterMatches: pendingMatches.length,
       opggUrl,
     };
   }
@@ -198,6 +207,9 @@ export class GetPlayerProfileUseCase {
       gameModeStats: [],
       recentForm: [],
       duoStats: [],
+      encounters: [],
+      encounterMatches: 0,
+      pendingEncounterMatches: 0,
       opggUrl,
     };
   }
